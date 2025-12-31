@@ -16,6 +16,7 @@ export default function CompanionPage() {
 
   useEffect(() => {
     loadCrops();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadCrops = async () => {

@@ -13,7 +13,7 @@ import type { Crop, CropCategory } from '@/types';
 
 export default function CalendarPage() {
   const router = useRouter();
-  const [userCrops, setUserCrops] = useState<any[]>([]);
+  const [userCrops, setUserCrops] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<CropCategory | 'All'>('All');
   const [lastFrostDate, setLastFrostDate] = useState<Date | null>(null);
@@ -23,6 +23,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     loadCalendar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadCalendar = async () => {
@@ -69,7 +70,10 @@ export default function CalendarPage() {
     if (filterCategory === 'All') {
       return userCrops;
     }
-    return userCrops.filter(uc => uc.crop && uc.crop.category === filterCategory);
+    return userCrops.filter(uc => {
+      const crop = uc.crop as Crop | undefined;
+      return crop && crop.category === filterCategory;
+    });
   };
 
   const getDaysInMonth = () => {
@@ -81,9 +85,9 @@ export default function CalendarPage() {
   const getCropsForDay = (day: Date) => {
     const filtered = getFilteredCrops();
     return filtered.filter(uc => {
-      if (!uc.crop || !lastFrostDate) return false;
+      const crop = uc.crop as Crop | undefined;
+      if (!crop || !lastFrostDate) return false;
       
-      const crop = uc.crop as Crop;
       const dates = calculatePlantingDates(crop, lastFrostDate);
       
       // Check if this day matches any planting date
@@ -264,16 +268,16 @@ export default function CalendarPage() {
                         {cropsForDay.map(uc => {
                           const crop = uc.crop as Crop;
                           const eventType = getEventType(crop, day);
-                          const bgColor = {
-                            indoor: 'bg-blue-200',
-                            transplant: 'bg-green-200',
-                            sow: 'bg-yellow-200',
-                            harvest: 'bg-purple-200',
-                          }[eventType || ''] || 'bg-gray-200';
+                          let bgColor = 'bg-gray-200';
+                          
+                          if (eventType === 'indoor') bgColor = 'bg-blue-200';
+                          else if (eventType === 'transplant') bgColor = 'bg-green-200';
+                          else if (eventType === 'sow') bgColor = 'bg-yellow-200';
+                          else if (eventType === 'harvest') bgColor = 'bg-purple-200';
 
                           return (
                             <div
-                              key={uc.id}
+                              key={uc.id as string}
                               className={`text-xs p-1 rounded ${bgColor} truncate`}
                               title={`${crop.name} - ${eventType}`}
                             >
@@ -293,14 +297,14 @@ export default function CalendarPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Timeline View</h2>
               <div className="space-y-4">
                 {getFilteredCrops().map(uc => {
-                  const crop = uc.crop as Crop;
-                  if (!lastFrostDate) return null;
+                  const crop = uc.crop as Crop | undefined;
+                  if (!crop || !lastFrostDate) return null;
                   
                   const dates = calculatePlantingDates(crop, lastFrostDate);
                   const window = getPlantingWindow(crop, lastFrostDate);
 
                   return (
-                    <Card key={uc.id}>
+                    <Card key={uc.id as string}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3">

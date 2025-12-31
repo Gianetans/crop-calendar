@@ -1,4 +1,4 @@
-import { addWeeks, subWeeks, addDays, differenceInDays, format, parseISO, isBefore, isAfter } from 'date-fns';
+import { addWeeks, subWeeks, addDays, differenceInDays, format, parseISO, isBefore } from 'date-fns';
 import type { Crop, PlantingDates, PlantingInstructions, PlantingWindowStatus } from '@/types';
 
 /**

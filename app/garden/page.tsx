@@ -6,15 +6,14 @@ import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import Input from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase';
 import { getDaysUntilPlanting, formatDate, daysFromToday } from '@/lib/planting-calc';
 import { parseISO } from 'date-fns';
-import type { UserCrop, Crop, CropStatus } from '@/types';
+import type { Crop, CropStatus } from '@/types';
 
 export default function GardenPage() {
   const router = useRouter();
-  const [userCrops, setUserCrops] = useState<any[]>([]);
+  const [userCrops, setUserCrops] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<CropStatus | 'all'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
@@ -24,6 +23,7 @@ export default function GardenPage() {
 
   useEffect(() => {
     loadGarden();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadGarden = async () => {
@@ -125,10 +125,12 @@ export default function GardenPage() {
 
     filtered.sort((a, b) => {
       if (sortBy === 'name') {
-        return a.crop.name.localeCompare(b.crop.name);
+        const cropA = a.crop as Crop | undefined;
+        const cropB = b.crop as Crop | undefined;
+        return (cropA?.name || '').localeCompare(cropB?.name || '');
       } else {
-        const dateA = a.actual_plant_date || a.planned_plant_date || '';
-        const dateB = b.actual_plant_date || b.planned_plant_date || '';
+        const dateA = (a.actual_plant_date as string) || (a.planned_plant_date as string) || '';
+        const dateB = (b.actual_plant_date as string) || (b.planned_plant_date as string) || '';
         return dateA.localeCompare(dateB);
       }
     });
@@ -216,14 +218,15 @@ export default function GardenPage() {
             <div className="space-y-4">
               {filteredCrops.map((userCrop) => {
                 const crop = userCrop.crop as Crop;
-                const plantDate = userCrop.actual_plant_date || userCrop.planned_plant_date;
+                const plantDate = (userCrop.actual_plant_date as string) || (userCrop.planned_plant_date as string);
                 const daysUntil = lastFrostDate ? getDaysUntilPlanting(crop, lastFrostDate) : null;
-                const harvestDays = userCrop.estimated_harvest_date 
-                  ? daysFromToday(userCrop.estimated_harvest_date)
+                const harvestDate = userCrop.estimated_harvest_date as string | undefined;
+                const harvestDays = harvestDate 
+                  ? daysFromToday(harvestDate)
                   : null;
 
                 return (
-                  <Card key={userCrop.id}>
+                  <Card key={userCrop.id as string}>
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       {/* Crop Info */}
                       <div className="flex-1">
@@ -234,14 +237,14 @@ export default function GardenPage() {
                             </h3>
                           </Link>
                           <Badge type="category" value={crop.category} />
-                          <Badge type="status" value={userCrop.status} />
+                          <Badge type="status" value={(userCrop.status as string) || 'planned'} />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                           {/* Plant Date */}
                           <div>
                             <span className="text-gray-600">Plant Date: </span>
-                            {editingId === userCrop.id ? (
+                            {editingId === (userCrop.id as string) ? (
                               <div className="flex gap-2 mt-1">
                                 <input
                                   type="date"
@@ -249,7 +252,7 @@ export default function GardenPage() {
                                   onChange={(e) => setEditDate(e.target.value)}
                                   className="px-2 py-1 border border-gray-300 rounded text-sm"
                                 />
-                                <Button size="sm" onClick={() => handleDateUpdate(userCrop.id)}>
+                                <Button size="sm" onClick={() => handleDateUpdate(userCrop.id as string)}>
                                   Save
                                 </Button>
                                 <Button size="sm" variant="secondary" onClick={() => setEditingId(null)}>
@@ -259,8 +262,8 @@ export default function GardenPage() {
                             ) : (
                               <button
                                 onClick={() => {
-                                  setEditingId(userCrop.id);
-                                  setEditDate(userCrop.actual_plant_date || userCrop.planned_plant_date || '');
+                                  setEditingId(userCrop.id as string);
+                                  setEditDate((userCrop.actual_plant_date as string) || (userCrop.planned_plant_date as string) || '');
                                 }}
                                 className="font-medium text-gray-900 hover:text-green-600"
                               >
@@ -270,7 +273,7 @@ export default function GardenPage() {
                           </div>
 
                           {/* Days Until/Overdue */}
-                          {userCrop.status === 'planned' && daysUntil !== null && (
+                          {(userCrop.status as string) === 'planned' && daysUntil !== null ? (
                             <div>
                               <span className="text-gray-600">
                                 {daysUntil >= 0 ? 'Days until planting: ' : 'Overdue: '}
@@ -279,10 +282,10 @@ export default function GardenPage() {
                                 {Math.abs(daysUntil)} day{Math.abs(daysUntil) !== 1 ? 's' : ''}
                               </span>
                             </div>
-                          )}
+                          ) : null}
 
                           {/* Harvest Date */}
-                          {(userCrop.status === 'planted' || userCrop.status === 'harvesting') && harvestDays !== null && (
+                          {((userCrop.status as string) === 'planted' || (userCrop.status as string) === 'harvesting') && harvestDays !== null ? (
                             <div>
                               <span className="text-gray-600">
                                 {harvestDays >= 0 ? 'Harvest in: ' : 'Ready to harvest!'}
@@ -291,20 +294,20 @@ export default function GardenPage() {
                                 {harvestDays >= 0 ? `${harvestDays} day${harvestDays !== 1 ? 's' : ''}` : ''}
                               </span>
                             </div>
-                          )}
+                          ) : null}
 
                           {/* Quantity */}
-                          {userCrop.quantity && (
+                          {userCrop.quantity ? (
                             <div>
                               <span className="text-gray-600">Quantity: </span>
-                              <span className="font-medium text-gray-900">{userCrop.quantity}</span>
+                              <span className="font-medium text-gray-900">{userCrop.quantity as string}</span>
                             </div>
-                          )}
+                          ) : null}
                         </div>
 
-                        {userCrop.notes && (
-                          <p className="text-sm text-gray-600 mt-2">📝 {userCrop.notes}</p>
-                        )}
+                        {userCrop.notes ? (
+                          <p className="text-sm text-gray-600 mt-2">📝 {userCrop.notes as string}</p>
+                        ) : null}
                       </div>
 
                       {/* Actions */}
@@ -312,15 +315,15 @@ export default function GardenPage() {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            variant={userCrop.status === 'planned' ? 'primary' : 'secondary'}
-                            onClick={() => handleStatusChange(userCrop.id, 'planned')}
+                            variant={(userCrop.status as string) === 'planned' ? 'primary' : 'secondary'}
+                            onClick={() => handleStatusChange(userCrop.id as string, 'planned')}
                           >
                             Planned
                           </Button>
                           <Button
                             size="sm"
-                            variant={userCrop.status === 'planted' ? 'success' : 'secondary'}
-                            onClick={() => handleStatusChange(userCrop.id, 'planted')}
+                            variant={(userCrop.status as string) === 'planted' ? 'success' : 'secondary'}
+                            onClick={() => handleStatusChange(userCrop.id as string, 'planted')}
                           >
                             Planted
                           </Button>
@@ -328,15 +331,15 @@ export default function GardenPage() {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            variant={userCrop.status === 'harvesting' ? 'primary' : 'secondary'}
-                            onClick={() => handleStatusChange(userCrop.id, 'harvesting')}
+                            variant={(userCrop.status as string) === 'harvesting' ? 'primary' : 'secondary'}
+                            onClick={() => handleStatusChange(userCrop.id as string, 'harvesting')}
                           >
                             Harvesting
                           </Button>
                           <Button
                             size="sm"
-                            variant={userCrop.status === 'harvested' ? 'secondary' : 'secondary'}
-                            onClick={() => handleStatusChange(userCrop.id, 'harvested')}
+                            variant={(userCrop.status as string) === 'harvested' ? 'secondary' : 'secondary'}
+                            onClick={() => handleStatusChange(userCrop.id as string, 'harvested')}
                           >
                             Harvested
                           </Button>
@@ -344,7 +347,7 @@ export default function GardenPage() {
                         <Button
                           size="sm"
                           variant="danger"
-                          onClick={() => handleDelete(userCrop.id)}
+                          onClick={() => handleDelete(userCrop.id as string)}
                           className="w-full"
                         >
                           Remove

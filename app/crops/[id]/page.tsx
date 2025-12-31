@@ -1,17 +1,16 @@
 import React from 'react';
-import { cookies } from 'next/headers';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
-import { calculatePlantingDates, getPlantingInstructions, formatDate } from '@/lib/planting-calc';
+import { calculatePlantingDates, getPlantingInstructions } from '@/lib/planting-calc';
 import { parseISO } from 'date-fns';
 import type { Crop } from '@/types';
+import { createServerClient } from '@/lib/supabase';
 
 export default async function CropDetailPage({ params }: { params: { id: string } }) {
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = createServerClient();
   
   const { data: { session } } = await supabase.auth.getSession();
   
@@ -42,7 +41,7 @@ export default async function CropDetailPage({ params }: { params: { id: string 
   }
 
   const lastFrostDate = parseISO(profile.last_frost_date);
-  const plantingDates = calculatePlantingDates(crop as Crop, lastFrostDate);
+  calculatePlantingDates(crop as Crop, lastFrostDate);
   const instructions = getPlantingInstructions(crop as Crop, lastFrostDate);
 
   // Check if crop is in user's garden

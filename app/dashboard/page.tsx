@@ -1,17 +1,16 @@
 import React from 'react';
-import { cookies } from 'next/headers';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { calculatePlantingDates, getDaysUntilPlanting, getPlantingWindow } from '@/lib/planting-calc';
+import { getDaysUntilPlanting, getPlantingWindow } from '@/lib/planting-calc';
 import { parseISO } from 'date-fns';
-import type { Crop, UserCrop } from '@/types';
+import type { Crop } from '@/types';
+import { createServerClient } from '@/lib/supabase';
 
 export default async function DashboardPage() {
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = createServerClient();
   
   const { data: { session } } = await supabase.auth.getSession();
   
@@ -47,14 +46,14 @@ export default async function DashboardPage() {
   
   const cropsReadyToPlant = userCrops?.filter(uc => {
     if (!uc.crop || uc.status !== 'planned') return false;
-    const crop = uc.crop as any as Crop;
+    const crop = uc.crop as unknown as Crop;
     const window = getPlantingWindow(crop, lastFrostDate);
     return window === 'optimal';
   }).length || 0;
 
   const overduePlantings = userCrops?.filter(uc => {
     if (!uc.crop || uc.status !== 'planned') return false;
-    const crop = uc.crop as any as Crop;
+    const crop = uc.crop as unknown as Crop;
     const days = getDaysUntilPlanting(crop, lastFrostDate);
     return days < 0;
   }).length || 0;
@@ -66,7 +65,7 @@ export default async function DashboardPage() {
   // Get crops to plant this week
   const cropsThisWeek = userCrops?.filter(uc => {
     if (!uc.crop || uc.status !== 'planned') return false;
-    const crop = uc.crop as any as Crop;
+    const crop = uc.crop as unknown as Crop;
     const days = getDaysUntilPlanting(crop, lastFrostDate);
     return days >= 0 && days <= 7;
   }) || [];
@@ -77,7 +76,7 @@ export default async function DashboardPage() {
   if (plannedCrops.length > 0) {
     const upcomingDays = plannedCrops
       .map(uc => {
-        const crop = uc.crop as any as Crop;
+        const crop = uc.crop as unknown as Crop;
         return getDaysUntilPlanting(crop, lastFrostDate);
       })
       .filter(d => d >= 0)
@@ -172,7 +171,7 @@ export default async function DashboardPage() {
                 <h4 className="font-medium text-gray-700 mb-3">Plant this week:</h4>
                 <div className="space-y-2">
                   {cropsThisWeek.slice(0, 5).map((uc) => {
-                    const crop = uc.crop as any as Crop;
+                    const crop = uc.crop as unknown as Crop;
                     const days = getDaysUntilPlanting(crop, lastFrostDate);
                     return (
                       <div key={uc.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">

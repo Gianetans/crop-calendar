@@ -18,17 +18,19 @@ export default function CropsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CropCategory | 'All'>('All');
   const [sortBy, setSortBy] = useState<'name' | 'maturity'>('name');
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<Record<string, unknown> | null>(null);
   const [message, setMessage] = useState('');
 
   const categories: Array<CropCategory | 'All'> = ['All', 'Vegetable', 'Fruit', 'Herb', 'Grain', 'Legume'];
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     filterAndSortCrops();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [crops, searchQuery, selectedCategory, sortBy]);
 
   const loadData = async () => {
@@ -95,7 +97,8 @@ export default function CropsPage() {
       return;
     }
 
-    if (!userProfile.last_frost_date) {
+    const lastFrostDateStr = userProfile.last_frost_date as string | undefined;
+    if (!lastFrostDateStr) {
       router.push('/setup');
       return;
     }
@@ -108,7 +111,7 @@ export default function CropsPage() {
       }
 
       // Calculate planting date
-      const lastFrostDate = parseISO(userProfile.last_frost_date);
+      const lastFrostDate = parseISO(lastFrostDateStr);
       const { calculatePlantingDates } = await import('@/lib/planting-calc');
       const dates = calculatePlantingDates(crop, lastFrostDate);
       const plantDate = dates.transplantDate || dates.directSowEarliest || dates.indoorStartDate;
@@ -234,8 +237,9 @@ export default function CropsPage() {
         {filteredCrops.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCrops.map(crop => {
-              const plantingWindow = userProfile?.last_frost_date
-                ? getPlantingWindow(crop, parseISO(userProfile.last_frost_date))
+              const lastFrostDateStr = userProfile?.last_frost_date as string | undefined;
+              const plantingWindow = lastFrostDateStr
+                ? getPlantingWindow(crop, parseISO(lastFrostDateStr))
                 : undefined;
               
               return (

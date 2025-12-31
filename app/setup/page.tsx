@@ -1,11 +1,10 @@
 import React from 'react';
-import { cookies } from 'next/headers';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { redirect } from 'next/navigation';
 import LocationSetup from '@/components/LocationSetup';
+import { createServerClient } from '@/lib/supabase';
 
 export default async function SetupPage() {
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = createServerClient();
   
   const { data: { session } } = await supabase.auth.getSession();
   

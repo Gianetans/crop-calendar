@@ -52,9 +52,10 @@ export default function SignupPage() {
         router.push('/setup');
         router.refresh();
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Signup error:', err);
-      setError(err.message || 'Failed to create account. Please try again.');
+      const error = err as Error;
+      setError(error.message || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }
